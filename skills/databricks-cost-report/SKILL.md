@@ -18,15 +18,26 @@ Check in order: env var `DATABRICKS_TOKEN`, then the file `~/.databricks_token`
 - **If a token is present**, go to Step 2.
 - **If not present, set it up — but do NOT take the token in chat.** For security, never
   ask the user to paste their token to you, and never write/store/echo it yourself.
-  Instead, instruct the user to do this one-time setup themselves:
-  1. In Databricks: **Settings → Developer → Access tokens → Generate new token**.
-  2. Save it locally (one of):
-     - run in their own terminal: `printf '%s' '<PASTE_TOKEN>' > ~/.databricks_token && chmod 600 ~/.databricks_token`, **or**
-     - set the `DATABRICKS_TOKEN` environment variable.
-  Then they tell you it's done and you re-check.
+  Give the user these exact steps to run themselves:
+  1. In Databricks: **Settings → Developer → Access tokens → Generate new token**. The
+     token only needs **SQL access** — i.e. the ability to run queries on a SQL warehouse
+     and read the system schemas. No admin/management scope is required.
+  2. **Save the token locally** (replace `<YOUR_DATABRICKS_PAT>` with their real token):
+     - **macOS / Linux** (Terminal):
+       ```bash
+       printf '%s' '<YOUR_DATABRICKS_PAT>' > ~/.databricks_token && chmod 600 ~/.databricks_token
+       ```
+     - **Windows** (PowerShell):
+       ```powershell
+       Set-Content -NoNewline -Path "$HOME\.databricks_token" -Value '<YOUR_DATABRICKS_PAT>'
+       ```
+  3. To **remove the token** later:
+     - **macOS / Linux:** `rm ~/.databricks_token`
+     - **Windows** (PowerShell): `Remove-Item "$HOME\.databricks_token"`
+  Then the user tells you it's done and you re-check.
 
-**The user's PAT determines what the report can read.** It needs `SELECT` on
-`system.billing`, `system.compute`, `system.lakeflow`. If the token lacks those grants,
+**The user's PAT determines what the report can read.** It needs SQL access to `SELECT`
+on `system.billing`, `system.compute`, `system.lakeflow`. If the token lacks those grants,
 the affected sections come back **empty** (a warning, not a crash) — that means missing
 grants, not a bug; the user should ask a Databricks admin to grant their user/group
 access to those system schemas.
