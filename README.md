@@ -16,12 +16,12 @@ An interactive HTML report:
 
 ## Prerequisites (per user)
 1. **Python 3.10+** on the machine running Claude Code (the desktop app bundles a recent Python; system `python3` ≥ 3.10 also works).
-2. **Databricks access** — a token (personal PAT for interactive use, **service principal for scheduled**) with **SELECT on `system.billing`, `system.compute`, `system.lakeflow`**.
+2. **Databricks access via your PAT** — auth is a **personal access token** (env `DATABRICKS_TOKEN` or `~/.databricks_token`). **Your PAT's permissions determine what the report can read:** it needs **SELECT on `system.billing`, `system.compute`, `system.lakeflow`**. If your token lacks those grants, the affected sections come back **empty** (warning, not a crash) — that means missing grants, not a bug. (PAT for now, interactive *and* scheduled; a shared service principal for scheduled runs is a planned improvement.)
 3. A **SQL warehouse id** to run the queries on.
 
 ## Install (in the Claude desktop app / Claude Code)
 ```
-/plugin marketplace add <THIS_REPO_URL>
+/plugin marketplace add git@github.com:guidepointglobal/databricks-cost-report-skill.git
 /plugin install databricks-cost-report
 ```
 
@@ -37,7 +37,7 @@ change the month, or drill into a job/endpoint.
 
 ## Schedule (before month-end)
 Create a routine (e.g. `/schedule`) that runs the generator on a cron like `0 9 28 * *`.
-Use a **service-principal** token for the unattended run.
+For now the scheduled run uses the same **PAT** model (a shared service principal is a planned improvement).
 
 ## Updates
 This plugin is versioned in git. Pull new versions with `/plugin marketplace update`

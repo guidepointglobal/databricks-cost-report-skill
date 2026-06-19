@@ -19,14 +19,21 @@ written to `~/databricks_cost_report.html` by default; set `COST_REPORT_OUTPUT` 
 change the path. After it runs, open the file and summarize the headline numbers
 (total, MoM %, top growers, anything flagged).
 
-## Authentication (the gating prerequisite)
-The generator needs Databricks access. Resolution order for the token:
+## Authentication — your personal access token (PAT)
+The generator authenticates with a **Databricks PAT**, resolved as:
 1. `DATABRICKS_TOKEN` env var, else
 2. the file `~/.databricks_token`.
 
-The principal (user PAT **or** service principal) must have **SELECT on the system
-schemas**: `system.billing`, `system.compute`, `system.lakeflow`. For an unattended
-**scheduled** run, use a **service principal** (don't depend on a personal PAT).
+**Your PAT determines what you can see.** The report only includes data your token is
+permitted to read — it needs **SELECT on `system.billing`, `system.compute`,
+`system.lakeflow`**. If your PAT's user/principal lacks those grants, the affected
+sections come back **empty** (the generator prints a warning and keeps going). An empty
+or partial report almost always means **missing system-table grants, not a bug** — ask a
+Databricks admin to grant your user/group access to those system schemas.
+
+> **Decision (2026-06-18):** PATs for now, for both interactive and scheduled use. A
+> shared **service principal** for unattended/scheduled runs is a planned improvement
+> (so the schedule doesn't depend on one person's token).
 
 ## Configuration (environment variables)
 | Variable | Required | Meaning |
@@ -42,5 +49,6 @@ asset/job/endpoint — the generator's SQL is the source of truth for those answ
 
 ## Scheduling (PIPE-8855)
 To run before end of month, create a scheduled routine (e.g. via `/schedule`) that
-runs the command above on a cron like `0 9 28 * *`. Use a service-principal token
-for the scheduled run.
+runs the command above on a cron like `0 9 28 * *`. For now the scheduled run uses the
+same PAT model (so it reads whatever that PAT is permitted to); a shared service
+principal is a planned improvement.
