@@ -13,8 +13,9 @@ Run with Python 3.10+.
 """
 import os, json, time, urllib.request, urllib.error
 
-DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
-DATABRICKS_WAREHOUSE_ID = os.environ.get("DATABRICKS_SQL_WAREHOUSE_ID", "")
+# Defaults to the Guidepoint workspace; override with env vars for another workspace/warehouse.
+DATABRICKS_HOST = os.environ.get("DATABRICKS_HOST", "https://adb-2432315844252766.6.azuredatabricks.net").rstrip("/")
+DATABRICKS_WAREHOUSE_ID = os.environ.get("DATABRICKS_SQL_WAREHOUSE_ID", "7e2c8ffc3aa3721b")
 
 def _token():
     t = os.environ.get("DATABRICKS_TOKEN")
@@ -58,7 +59,7 @@ def execute_databricks_sql(statement):
 
 MONTHS = ["2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05"]
 CUR, PREV = "2026-05", "2026-04"
-OUTPUT = os.environ.get("COST_REPORT_OUTPUT") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "databricks_cost_report.html")
+OUTPUT = os.environ.get("COST_REPORT_OUTPUT") or os.path.expanduser("~/databricks_cost_report.html")
 
 PRICED = """WITH prices AS (SELECT sku_name,usage_unit,pricing.default up,price_start_time,
   coalesce(price_end_time,timestamp(date_add(current_date,1))) pe

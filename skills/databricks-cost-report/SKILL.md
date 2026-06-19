@@ -1,54 +1,71 @@
 ---
 name: databricks-cost-report
-description: Generate the monthly Databricks cost & efficiency report (self-contained HTML) — month-over-month spend by env/pod/project, key growers per asset type, per-type cost-optimization recommendations with analysis, and under-provisioned assets. Use when asked for the Databricks cost report, monthly cost review, where spend is growing, or which assets to optimize. Built for PIPE-8855; schedulable to run before end of month.
+description: Generate a monthly Databricks cost & efficiency report (self-contained HTML) — month-over-month spend by env/pod/project, key growers per asset type, cost-optimization recommendations, and under-provisioned assets. Use when asked for the Databricks cost report, monthly cost review, where spend is growing, which assets to optimize, or to customize/extend the report. On first use it helps the user set up a Databricks token, then runs the bundled generator. Built for PIPE-8855.
 ---
 
 # Databricks Cost & Efficiency Report
 
-Runs a self-contained Python generator that queries Databricks system tables, prices
-usage to USD, and writes an interactive HTML report.
+Generates a self-contained HTML cost report from Databricks system tables. A **standard
+run** produces the full report described below; the user can also ask for a **customized**
+version. The generator is `generate_report.py`, bundled in this skill's directory
+(Python 3.10+, standard library only — no pip installs).
 
-## How to run
-```bash
-DATABRICKS_HOST="$DATABRICKS_HOST" \
-DATABRICKS_SQL_WAREHOUSE_ID="$DATABRICKS_SQL_WAREHOUSE_ID" \
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/databricks-cost-report/generate_report.py"
+## Step 1 — First-run setup: Databricks token
+Before generating, make sure a Databricks **personal access token (PAT)** is available.
+Check in order: env var `DATABRICKS_TOKEN`, then the file `~/.databricks_token`
+(e.g. `test -s ~/.databricks_token || echo MISSING`).
+
+- **If a token is present**, go to Step 2.
+- **If not present, set it up — but do NOT take the token in chat.** For security, never
+  ask the user to paste their token to you, and never write/store/echo it yourself.
+  Instead, instruct the user to do this one-time setup themselves:
+  1. In Databricks: **Settings → Developer → Access tokens → Generate new token**.
+  2. Save it locally (one of):
+     - run in their own terminal: `printf '%s' '<PASTE_TOKEN>' > ~/.databricks_token && chmod 600 ~/.databricks_token`, **or**
+     - set the `DATABRICKS_TOKEN` environment variable.
+  Then they tell you it's done and you re-check.
+
+**The user's PAT determines what the report can read.** It needs `SELECT` on
+`system.billing`, `system.compute`, `system.lakeflow`. If the token lacks those grants,
+the affected sections come back **empty** (a warning, not a crash) — that means missing
+grants, not a bug; the user should ask a Databricks admin to grant their user/group
+access to those system schemas.
+
+> Workspace host and SQL warehouse default to Guidepoint's, so usually **only the token**
+> is needed. Override with `DATABRICKS_HOST` / `DATABRICKS_SQL_WAREHOUSE_ID` for another
+> workspace or warehouse.
+
+## Step 2 — Standard report
+Run the bundled generator with Python 3.10+:
 ```
-Requires **Python 3.10+** (standard library only — no pip installs). The report is
-written to `~/databricks_cost_report.html` by default; set `COST_REPORT_OUTPUT` to
-change the path. After it runs, open the file and summarize the headline numbers
-(total, MoM %, top growers, anything flagged).
+python3 "<this skill's directory>/generate_report.py"
+```
+It writes `~/databricks_cost_report.html` by default (override with `COST_REPORT_OUTPUT`).
+Open it and summarize the headline numbers (total, MoM %, top growers, anything flagged).
 
-## Authentication — your personal access token (PAT)
-The generator authenticates with a **Databricks PAT**, resolved as:
-1. `DATABRICKS_TOKEN` env var, else
-2. the file `~/.databricks_token`.
+### What the standard report covers
+1. **KPI cards** — total spend, month-over-month %, attribution coverage (pod / project).
+2. **Cost breakdown by environment** — prod / dev / devtest tabs, each broken down **by service → by pod → by pod×project**, every row with a 6-month sparkline + MoM.
+3. **Key growers** — top 10 per asset type (Jobs / Clusters / SQL warehouses / Serving / Lakebase), ranked by month-over-month $ increase.
+4. **Compute metrics** — utilization & idle split by compute type (classic JOBS vs ALL_PURPOSE), plus where job spend runs (classic / serverless / all-purpose).
+5. **Under-provisioned assets** — jobs/clusters sustaining ≥70% CPU (candidates for *more* resources).
+6. **Cost optimization recommendations** — top 10 growers per type with an analysis of *what drove the growth* and *what to do* (volume vs a best-practice issue).
+7. **How cost is calculated** — disclaimer + the exact query (list price; DBU/Databricks portion).
+8. **Next steps** — deep-dive pointers for serving endpoints, Lakebase, and serverless SQL.
 
-**Your PAT determines what you can see.** The report only includes data your token is
-permitted to read — it needs **SELECT on `system.billing`, `system.compute`,
-`system.lakeflow`**. If your PAT's user/principal lacks those grants, the affected
-sections come back **empty** (the generator prints a warning and keeps going). An empty
-or partial report almost always means **missing system-table grants, not a bug** — ask a
-Databricks admin to grant your user/group access to those system schemas.
+## Step 3 — Customized report (only if the user asks)
+If the user wants changes (a different month, added/removed sections, a different grouping
+or filter, a specific warehouse, etc.):
+- **Do not edit the standard `generate_report.py`.** Copy it to a **postfixed** name —
+  `generate_report_<label>.py` (label from the request, e.g. `generate_report_q2.py` or
+  `generate_report_lakehouse.py`) — edit the **copy**, and run that.
+- Write its output to a **postfixed** file too, e.g.
+  `COST_REPORT_OUTPUT=~/databricks_cost_report_<label>.html`.
+- This keeps the standard report reproducible and lets the user keep multiple variants
+  side by side.
 
-> **Decision (2026-06-18):** PATs for now, for both interactive and scheduled use. A
-> shared **service principal** for unattended/scheduled runs is a planned improvement
-> (so the schedule doesn't depend on one person's token).
-
-## Configuration (environment variables)
-| Variable | Required | Meaning |
-|---|---|---|
-| `DATABRICKS_HOST` | yes | Workspace URL, e.g. `https://adb-….azuredatabricks.net` |
-| `DATABRICKS_SQL_WAREHOUSE_ID` | yes | A SQL warehouse to run the queries on |
-| `DATABRICKS_TOKEN` / `DATABRICKS_TOKEN_FILE` | yes | PAT (or service-principal token); file defaults to `~/.databricks_token` |
-| `COST_REPORT_OUTPUT` | no | Output HTML path (default `~/databricks_cost_report.html`) |
-
-## Updating / asking questions
-Ask in chat to re-run it, change the reporting month, or drill into a specific
-asset/job/endpoint — the generator's SQL is the source of truth for those answers.
-
-## Scheduling (PIPE-8855)
-To run before end of month, create a scheduled routine (e.g. via `/schedule`) that
-runs the command above on a cron like `0 9 28 * *`. For now the scheduled run uses the
-same PAT model (so it reads whatever that PAT is permitted to); a shared service
-principal is a planned improvement.
+## Notes
+- Costs are **list price** (not your invoice) and the **Databricks/DBU portion** — for
+  classic compute the Azure VM cost is billed separately; serverless SKUs bundle it.
+- To re-run, change the month, or drill into a specific job / endpoint / cluster, just
+  ask — the generator's SQL is the source of truth for those answers.
