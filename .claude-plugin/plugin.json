@@ -1,0 +1,6 @@
+{
+  "name": "databricks-cost-report",
+  "version": "1.0.0",
+  "description": "Monthly Databricks cost & efficiency report (HTML): month-over-month spend by env/pod/project, key growers per asset type, per-type cost-optimization recommendations with analysis, and under-provisioned assets. Built for PIPE-8855.",
+  "author": { "name": "Guidepoint Data Platform" }
+}

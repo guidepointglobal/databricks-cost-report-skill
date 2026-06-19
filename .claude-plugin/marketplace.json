@@ -1,0 +1,12 @@
+{
+  "name": "guidepoint-data-platform",
+  "owner": { "name": "Guidepoint Data Platform" },
+  "plugins": [
+    {
+      "name": "databricks-cost-report",
+      "source": "./",
+      "version": "1.0.0",
+      "description": "Monthly Databricks cost & efficiency report — MoM tracking, key growers, cost-optimization recommendations, under-provisioned assets."
+    }
+  ]
+}
