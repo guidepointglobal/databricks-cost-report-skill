@@ -1,6 +1,9 @@
 {
   "name": "guidepoint-data-platform",
   "owner": { "name": "Guidepoint Data Platform" },
+  "metadata": {
+    "description": "Guidepoint Data Platform plugins for Claude Code — starting with the Databricks cost & efficiency report (PIPE-8855)."
+  },
   "plugins": [
     {
       "name": "databricks-cost-report",
