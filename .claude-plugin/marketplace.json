@@ -1,5 +1,5 @@
 {
-  "name": "guidepoint-data-platform",
+  "name": "databricks-cost-report-skill",
   "owner": { "name": "Guidepoint Data Platform" },
   "metadata": {
     "description": "Guidepoint Data Platform plugins for Claude Code — starting with the Databricks cost & efficiency report (PIPE-8855)."
