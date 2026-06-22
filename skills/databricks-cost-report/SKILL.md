@@ -10,10 +10,27 @@ run** produces the full report described below; the user can also ask for a **cu
 version. The generator is `generate_report.py`, bundled in this skill's directory
 (Python 3.10+, standard library only — no pip installs).
 
+## Step 0 — Detect the OS first (important)
+Before running any shell command, determine the platform and use the matching commands
+throughout — **do not assume macOS/Linux**:
+```
+python -c "import platform; print(platform.system())"
+```
+→ `Darwin` (macOS) / `Linux` → use the **macOS/Linux** commands below; `Windows` → use the
+**Windows (PowerShell)** commands. A bash `~`/`test` command is unreliable on Windows (its
+home can differ from PowerShell's `$HOME`), so never use bash tests there.
+
 ## Step 1 — First-run setup: Databricks token
-Before generating, make sure a Databricks **personal access token (PAT)** is available.
-Check in order: env var `DATABRICKS_TOKEN`, then the file `~/.databricks_token`
-(e.g. `test -s ~/.databricks_token || echo MISSING`).
+Make sure a Databricks **personal access token (PAT)** is available — check the
+`DATABRICKS_TOKEN` env var, then the token file in the user's home, using the OS-correct check:
+- **macOS / Linux:**
+  ```bash
+  [ -n "$DATABRICKS_TOKEN" ] && echo ENV_SET || { [ -s ~/.databricks_token ] && echo FILE_SET || echo MISSING; }
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  if ($env:DATABRICKS_TOKEN) { "ENV_SET" } elseif (Test-Path "$HOME\.databricks_token") { "FILE_SET" } else { "MISSING" }
+  ```
 
 - **If a token is present**, go to Step 2.
 - **If not present, set it up — but do NOT take the token in chat.** For security, never
@@ -47,10 +64,15 @@ access to those system schemas.
 > workspace or warehouse.
 
 ## Step 2 — Standard report
-Run the bundled generator with Python 3.10+:
-```
-python3 "<this skill's directory>/generate_report.py"
-```
+Run the bundled generator with Python 3.10+ (use the OS-correct interpreter & path):
+- **macOS / Linux:**
+  ```bash
+  python3 "<this skill's directory>/generate_report.py"
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  python "<this skill's directory>\generate_report.py"   # or: py -3 "...\generate_report.py"
+  ```
 It writes `~/databricks_cost_report.html` by default (override with `COST_REPORT_OUTPUT`).
 Open it and summarize the headline numbers (total, MoM %, top growers, anything flagged).
 
